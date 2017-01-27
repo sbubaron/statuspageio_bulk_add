@@ -1,0 +1,223 @@
+<html>
+  <head>
+    <title>
+
+    </title>
+
+
+
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.12.4/jquery.min.js"></script>
+    <link rel="stylesheet" href="https://ajax.googleapis.com/ajax/libs/jqueryui/1.12.1/themes/smoothness/jquery-ui.css">
+    <script src="https://ajax.googleapis.com/ajax/libs/jqueryui/1.12.1/jquery-ui.min.js"></script>
+
+    <script src="/lib/multidatespicker/js/jquery-ui.multidatespicker.js"></script>
+
+    
+    <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/js/bootstrap.min.js"></script>
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css">
+
+    <link rel="stylesheet" href="//cdnjs.cloudflare.com/ajax/libs/timepicker/1.3.5/jquery.timepicker.min.css">
+    <script src="//cdnjs.cloudflare.com/ajax/libs/timepicker/1.3.5/jquery.timepicker.min.js"></script>
+    
+    <link rel="stylesheet" href="/lib/multidatespicker/css/mdp.css">
+    
+    <script src="/lib/momentjs/moment.js"></script>
+  </head>
+
+    <body>
+      <section>
+        <div class="container">
+          <div class="row">
+            <div class="col-sm-12 col-md-12 col-lg-9">
+            
+              <h1>Bulk Scheduled Maintenance Updater</h1>
+              <form class="form-horizontal">
+                <div class="form-group">
+                  <div class="col-sm-12">
+                    
+                      <label for="name">Name</label><input class="form-control" type="text" name="name" value="Testing...."/>
+                    
+                  </div>
+                </div>
+
+                <div class="form-group">
+                  <div class="col-sm-12">
+                    
+                      <label for="name">Service</label><select class="form-control" name="component">
+                        <option value="k1mlnqp380xs">PeopleSoft</option>
+                      </select>
+                  </div>
+                </div>
+
+                <div class="form-group">
+                  <div class="col-sm-12">
+                      <label for="dates">Dates</label>
+                      <div id="dates"></div>
+
+                      <script>
+                            var today = new Date();
+                            var y = today.getFullYear();
+                            $('#dates').multiDatesPicker({
+                              addDates: ['03/14/'+y, '02/19/'+y, '04/14/'+y],
+                              numberOfMonths: [2,3],
+                              minDate: 0,
+                              maxDate: 180,
+                              defaultDate: '1/1/'+y
+                              
+                            });
+                      </script>
+                    
+                  </div>
+                </div>
+
+                <div class="form-group">
+                  <div class="col-sm-6 col-md-4 col-lg-4">
+                    
+                      <label for="start_time">Start Time</label><input class="form-control timepicker start" type="text" name="start_time" />
+                    
+                  </div>
+
+                  <div class="col-sm-6 col-md-4 col-lg-4">
+                    
+                      <label for="end_time">End Time</label><input class="form-control timepicker end" type="text" name="end_time" />
+                    
+                  </div>
+                </div>
+
+                <script>
+
+                  $('.timepicker.start').timepicker({
+                      timeFormat: 'h:mm p',
+                      interval: 5,
+                      //minTime: '10',
+                      //maxTime: '6:00pm',
+                      defaultTime: '6',
+                      startTime: '00:00',
+                      dynamic: false,
+                      dropdown: true,
+                      scrollbar: true
+                  });
+
+                    $('.timepicker.end').timepicker({
+                      timeFormat: 'h:mm p',
+                      interval: 5,
+                      //minTime: '10',
+                      //maxTime: '6:00pm',
+                      defaultTime: '7',
+                      startTime: '00:00',
+                      dynamic: false,
+                      dropdown: true,
+                      scrollbar: true
+                  });
+
+                </script>
+
+                <div class="form-group">
+                  
+                </div>
+
+                <div class="form-group">
+                  <div class="col-sm-12">
+                    
+                      <label for="message">Message</label><textarea class="form-control" name="message">There is a scheduled maintenance for .....</textarea>
+                    
+                  </div>
+                </div>
+
+
+                  <div class="form-group">
+                  <div class="col-sm-12">
+                    
+                      <button id="submit" type="submit" class="btn btn-default">Submit</button>
+                    
+                  </div>
+                </div>
+
+            
+
+              </form>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <script>
+
+        $('#submit').click(function (e) {
+          e.preventDefault();
+
+          console.log("SUBMIT");
+
+          var incidents = [];
+          var incident = {};
+
+          var datesString = $('#dates').multiDatesPicker('value');
+          var datesArr = datesString.split(',');
+
+
+          datesArr.forEach(function(date) {
+              incident = {};
+
+              incident.name = $("input[name=name]").val();
+              incident.message = $("textarea[name=message]").val();
+              incident.component_ids = [];
+              incident.component_ids[0] =  $("select[name=component]").val();
+
+              incident.status = 'scheduled';
+              incident.wants_twitter_update = 'f';
+              incident.scheduled_auto_in_progress = 't';
+              incident.scheduled_auto_completed = 't';
+
+              console.log(date);
+
+              var startDate = moment(date + " " + $(".timepicker.start").val(), 'MM/DD/YYYY h:ma');
+              var endDate = moment(date + " " + $(".timepicker.end").val(), 'MM/DD/YYYY h:ma');
+           
+
+              incident.scheduled_for = startDate.toISOString();
+              incident.scheduled_until = endDate.toISOString();
+              incidents.push(incident);
+              
+              
+          });
+
+          
+          function setHeader(xhr) {
+
+            xhr.setRequestHeader('Authorization', 'OAuth ');
+            
+
+          }
+
+          incidents.forEach(function(inci) {
+            console.log(inci);
+
+            $.ajax({
+
+                url: 'https://api.statuspage.io/v1/pages/pageid/incidents.json',
+                type: 'POST',
+                contentType: "application/json",
+                datatype: 'json',
+                data: JSON.stringify({incident: inci}),
+                success: function(res) { console.log('Success'); console.log(res); },
+                error: function(err) { console.log('Error'); console.log(err); },
+                beforeSend: setHeader
+
+            });
+
+          });  
+
+            
+
+        });
+
+        </script>
+
+        <div id="result">
+
+        </div>
+    </body>
+  
+  
+  </head>
+</html>
